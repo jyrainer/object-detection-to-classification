@@ -1,6 +1,4 @@
 import os
-import json
-import copy
 
 import cv2
 
@@ -19,40 +17,65 @@ class Bbox2img:
         self.image_dir = image_dir
         self.imgz = imgz
         self.output_dir = output_dir
-        self.data = []
-        
+        self.coco = read_json(self.coco_file)
+        self.data = data
+
     def crop(
         self,
         margin = 0
         ):
-        coco_json = read_json(self.coco_file)
-
-        for anns in coco_json["annotations"] :
+        for anns in self.coco["annotations"] :
             image_id = anns["image_id"]                 # 이미지 고유 아이디
             x,y,width,height = map(int,anns["bbox"])    # 박스좌표
-            for imgs in coco_json["images"] :
+            for imgs in self.coco["images"] :
                 if image_id == imgs["id"] :
                     raw_file_path = os.path.join(self.image_dir, imgs["file_name"])
                     image = cv2.imread(raw_file_path)
                     
                     if image is not None :
-                        cropped_image = image[y:y+height, x:x+width]
+                        new_ymin = max(y - margin, 0)
+                        new_ymax = min(y + height + margin, image.shape[0])
+                        new_xmin = max(x - margin, 0)
+                        new_xmax = min(x + width + margin, image.shape[1])
+                        cropped_image = image[new_ymin:new_ymax, new_xmin:new_xmax]
                         new_data = {
                             "file_name" : imgs["file_name"],
                             "raw_file_path" : raw_file_path,
                             "image_data" : cropped_image
                         }
-                        self.data.append(new_data)
-                        #cv2.imwrite(output_path + 'nzia_' + ".jpg",cropped_image)
+                        self.data.append(new_data)                            
                     else :
                         print(f"{raw_file_path}가 존재하지 않음")
         
-    def process(
+    def letterbox(
         self,
-        ratio = True,
+        aspect_ratio = True,
     ):
-        
-        pass
+        if aspect_ratio == False:
+            for i, data in enumerate(self.data):
+                new_arr = cv2.resize(data["image_data"], (self.imgz[0], self.imgz[1]), interpolation=cv2.INTER_LINEAR)
+                self.data[i]["image_data"] = new_arr
+        elif aspect_ratio == True:
+            for i, data in enumerate(self.data):
+                if data["image_data"].shape[1] >= data["image_data"].shape[0]: # width 가 더 큰경우 
+                    ratio = self.imgz[0] / data["image_data"].shape[1]
+                elif data["image_data"].shape[1] < data["image_data"].shape[0]:
+                    ratio = self.imgz[1] / data["image_data"].shape[0]
+                dw, dh = (int(data["image_data"].shape[1] * ratio), int(data["image_data"].shape[0] * ratio ))
+                new_arr = cv2.resize(data["image_data"], (dw, dh), cv2.INTER_LINEAR)
+                
+                dw = self.imgz[0] - dw
+                dh = self.imgz[1] - dh
+                
+                dw /= 2
+                dh /= 2
+                
+                top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
+                left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
+                
+                new_arr = cv2.copyMakeBorder(new_arr, top, bottom, left, right, cv2.BORDER_CONSTANT,
+                                 value=(114, 114, 114))  # add border
+                self.data[i]["image_data"] = new_arr
     
     def save_image(
         self
@@ -61,13 +84,3 @@ class Bbox2img:
         for data in self.data:
             result_path = os.path.join(self.output_dir, data["file_name"])
             cv2.imwrite(result_path, data["image_data"])
-            
-        
-if __name__ == "__main__" :
-    new_b2i = Bbox2img(
-        coco_file = "/home/happyzion/yomce/object-detection-to-classification/assets/datasets_example/new_coco.json",
-        image_dir = "/home/happyzion/yomce/object-detection-to-classification/assets/datasets_example/new_coco.json"
-        )
-    new_b2i.crop(margin = 0)
-    new_b2i.save_image()
-    new_b2i.resize(padding = True,)
