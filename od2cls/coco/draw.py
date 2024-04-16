@@ -6,14 +6,10 @@ from tqdm import tqdm
  
 
 def draw_annotations(coco_file, image_dir, dst_dir):
-    data_dir = '/home/ljj/script/coco3'
     annotation_file = os.path.join(coco_file)
-    
     coco = COCO(annotation_file)
-    
     os.makedirs(dst_dir, exist_ok=True)
     
-    # 모든 이미지에 대한 주석 그리기
     for img_id in tqdm(coco.getImgIds()):
         try:
             cond = 0
@@ -29,7 +25,7 @@ def draw_annotations(coco_file, image_dir, dst_dir):
             cond2 = (image_info['height'] != image.size[1]) or (image_info['width'] != image.size[0])
             if cond2:
                 cond = 1
-                # 주석 그리기
+
             draw = ImageDraw.Draw(image)
             for annotation in annotations:
                 bbox = annotation['bbox']
@@ -44,7 +40,7 @@ def draw_annotations(coco_file, image_dir, dst_dir):
                 x0, y0, width, height = bbox
                 x1, y1 = x0 + width, y0 + height
                 draw.line([(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)], fill=outline_color, width=line_width)
-                draw.text((x0, y0 - 20), category, fill=outline_color, width = 10)
+                draw.text((x0, y0 - 20), category, fill=outline_color)
             
             # 이미지 저장
             if cond:
