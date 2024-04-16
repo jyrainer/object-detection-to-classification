@@ -22,9 +22,9 @@ class Bbox2img:
         self.data = []
         
     def crop(
-        self
+        self,
+        margin = 0
         ):
-        
         coco_json = read_json(self.coco_file)
 
         for anns in coco_json["annotations"] :
@@ -46,12 +46,28 @@ class Bbox2img:
                         #cv2.imwrite(output_path + 'nzia_' + ".jpg",cropped_image)
                     else :
                         print(f"{raw_file_path}가 존재하지 않음")
-                    
         
+    def process(
+        self,
+        ratio = True,
+    ):
+        
+        pass
+    
+    def save_image(
+        self
+    ):
+        os.makedirs(self.output_dir, exist_ok= True)
+        for data in self.data:
+            result_path = os.path.join(self.output_dir, data["file_name"])
+            cv2.imwrite(result_path, data["image_data"])
+            
         
 if __name__ == "__main__" :
     new_b2i = Bbox2img(
-        coco_file = "C:\\Users\\admin\\Desktop\\Github\\object-detection-to-classification\\assets\\datasets_example\\new_coco.json",
-        image_dir = "C:\\Users\\admin\\Desktop\\Github\\object-detection-to-classification\\assets\\datasets_example\\images"
+        coco_file = "/home/happyzion/yomce/object-detection-to-classification/assets/datasets_example/new_coco.json",
+        image_dir = "/home/happyzion/yomce/object-detection-to-classification/assets/datasets_example/new_coco.json"
         )
-    
+    new_b2i.crop(margin = 0)
+    new_b2i.save_image()
+    new_b2i.resize(padding = True,)
