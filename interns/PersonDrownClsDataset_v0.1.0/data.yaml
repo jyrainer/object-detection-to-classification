@@ -1,0 +1,7 @@
+path: ./PersonDrownClsDataset_v0.1.0
+train: train
+val: val
+test: test
+names:
+- normal
+- abnormal
