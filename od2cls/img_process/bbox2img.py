@@ -1,5 +1,6 @@
 import os
 import cv2
+import tqdm
 
 from od2cls.coco.validate import read_json
 
@@ -36,13 +37,14 @@ class Bbox2img:
         Args:
             margin (int, optional): 마진 픽셀 수를 지정할 수 있다. Defaults to 0.
         """
-        for anns in self.coco["annotations"] :
+        for anns in tqdm.tqdm(self.coco["annotations"]) :
             image_id = anns["image_id"]                 # 이미지 고유 아이디
             x,y,width,height = map(int,anns["bbox"])    # 박스좌표
             for imgs in self.coco["images"] :
                 if image_id == imgs["id"] :
                     raw_file_path = os.path.join(self.image_dir, imgs["file_name"])
                     image = cv2.imread(raw_file_path)
+                    save_file_path = imgs["file_name"].split(".")[0] + "_" + str(image_id) + ".jpg"
                     
                     if image is not None :
                         new_ymin = max(y - margin, 0)
@@ -51,7 +53,7 @@ class Bbox2img:
                         new_xmax = min(x + width + margin, image.shape[1])
                         cropped_image = image[new_ymin:new_ymax, new_xmin:new_xmax]
                         new_data = {
-                            "file_name" : imgs["file_name"],
+                            "file_name" : save_file_path,
                             "raw_file_path" : raw_file_path,
                             "category_id" : anns["category_id"],
                             "image_data" : cropped_image
@@ -126,7 +128,7 @@ class Bbox2img:
                 cate_dir = os.path.join(self.output_dir, v)
                 os.makedirs(cate_dir, exist_ok=True)
             
-        for data in self.data:
+        for data in tqdm.tqdm(self.data):
             if folder_per_class == False:
                 result_path = os.path.join(self.output_dir, data["file_name"])
             else:
